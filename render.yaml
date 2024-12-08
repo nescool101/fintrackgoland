@@ -1,0 +1,70 @@
+services:
+  - type: web
+    name: fintrack-app-service
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      # Polygon.io API Key (Sensitive)
+      - key: API_KEY
+        fromSecret:
+          name: polygon-api-key
+
+      # Database Connection String (Sensitive)
+      - key: DATABASE_URL
+        fromDatabase:
+          name: fintrack-database
+          property: connectionString
+
+      # SMTP Email Configuration
+      - key: EMAIL_HOST
+        value: "smtp.gmail.com"  # Non-sensitive
+
+      - key: EMAIL_PORT
+        value: "587"  # Non-sensitive
+
+      - key: EMAIL_USER
+        value: "nescool10001@gmail.com"  # Non-sensitive (public email address)
+
+      - key: EMAIL_PASS
+        fromSecret:
+          name: gmail-smtp-password  # Sensitive
+
+      # Recipient Email Address (Non-sensitive)
+      - key: EMAIL_RECIPIENT
+        value: "recipient@example.com"
+
+      # Cron Scheduling Flag
+      - key: RUN_CRON
+        value: "true"
+
+      # Basic Authentication Credentials for Test Endpoint
+      - key: AUTH_USERNAME
+        value: "admin"  # Non-sensitive (can be a unique username)
+
+      - key: AUTH_PASSWORD
+        fromSecret:
+          name: auth-password  # Sensitive
+
+    plan: starter  # Adjust based on your needs
+    region: oregon  # Choose the region closest to your users
+    healthCheckPath: /health  # Ensure your app exposes this endpoint
+
+databases:
+  - name: fintrack-database
+    plan: free  # Choose a plan that suits your database needs
+    databaseName: fintrackdb
+    user: fintrackuser
+    postgresMajorVersion: "16"
+    region: oregon
+    ipAllowList:
+      - source: 0.0.0.0/0
+        description: "Allow all"
+
+envVarGroups:
+  - name: default-env-group
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: "prod"
+      - key: LOG_LEVEL
+        value: "INFO"
