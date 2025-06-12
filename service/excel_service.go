@@ -165,8 +165,16 @@ func (es *ExcelService) addSummarySheet(f *excelize.File, data []models.StockDat
 		row++
 	}
 
+	// Agregar información sobre límites de API si hay pocos índices
+	if indices == 0 {
+		f.SetCellValue(summarySheet, fmt.Sprintf("A%d", row+1), "⚠️ ADVERTENCIA:")
+		f.SetCellValue(summarySheet, fmt.Sprintf("A%d", row+2), "No se obtuvieron datos de índices.")
+		f.SetCellValue(summarySheet, fmt.Sprintf("A%d", row+3), "Posible causa: Límite de API alcanzado (25 llamadas/día)")
+		f.SetCellValue(summarySheet, fmt.Sprintf("A%d", row+4), "Los límites se renuevan cada 24 horas.")
+	}
+
 	// Ajustar ancho de columna
-	f.SetColWidth(summarySheet, "A", "A", 35)
+	f.SetColWidth(summarySheet, "A", "A", 50)
 }
 
 // addStocksSheet agrega una hoja específica para stocks
@@ -242,7 +250,18 @@ func (es *ExcelService) addIndicesSheet(f *excelize.File, data []models.StockDat
 	}
 
 	if len(indices) == 0 {
-		f.SetCellValue(indicesSheet, "A1", "No hay datos de índices disponibles")
+		f.SetCellValue(indicesSheet, "A1", "⚠️ DATOS DE ÍNDICES NO DISPONIBLES")
+		f.SetCellValue(indicesSheet, "A3", "Posibles causas:")
+		f.SetCellValue(indicesSheet, "A4", "• Límite de API alcanzado (Alpha Vantage: 25 llamadas/día)")
+		f.SetCellValue(indicesSheet, "A5", "• Error de conectividad con el proveedor de datos")
+		f.SetCellValue(indicesSheet, "A6", "• Símbolos de índices no soportados por la API actual")
+		f.SetCellValue(indicesSheet, "A8", "Solución recomendada:")
+		f.SetCellValue(indicesSheet, "A9", "• Esperar hasta mañana para que se renueven los límites de API")
+		f.SetCellValue(indicesSheet, "A10", "• Considerar actualizar a un plan premium de la API")
+		f.SetCellValue(indicesSheet, "A11", "• Usar solo datos de stocks disponibles")
+
+		// Ajustar ancho de columna para el mensaje
+		f.SetColWidth(indicesSheet, "A", "A", 60)
 		return
 	}
 

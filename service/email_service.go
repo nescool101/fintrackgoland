@@ -98,6 +98,22 @@ func (es *EmailService) buildHTMLBody(message string, symbolCount int) string {
             padding: 2px 4px;
             border-radius: 3px;
         }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -108,7 +124,7 @@ func (es *EmailService) buildHTMLBody(message string, symbolCount int) string {
     <div class="content">
         <p>Estimado usuario,</p>
         
-        <p>%s</p>
+        <div>%s</div>
         
         <p>En el archivo Excel adjunto encontrará:</p>
         <ul>

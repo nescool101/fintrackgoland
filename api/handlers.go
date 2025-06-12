@@ -284,6 +284,17 @@ func (h *APIHandler) BasicAuth() gin.HandlerFunc {
 	})
 }
 
+// isIndex determina si un símbolo es un índice
+func (h *APIHandler) isIndex(symbol string) bool {
+	indices := []string{"SPX", "NDX", "DJI", "NYA", "ES_F", "NQ_F", "^GSPC", "^IXIC", "^DJI", "^NYA"}
+	for _, index := range indices {
+		if symbol == index {
+			return true
+		}
+	}
+	return false
+}
+
 // getWeekDates genera las fechas de la semana actual
 func getWeekDates() []string {
 	now := time.Now()
@@ -384,8 +395,38 @@ func (h *APIHandler) SendExcelReport(c *gin.Context) {
 	subject := fmt.Sprintf("📊 Reporte Financiero - %s", dateStr)
 	emailBody := fmt.Sprintf("Se adjunta el reporte financiero para la fecha %s.", dateStr)
 
+	// Contar tipos de datos obtenidos
+	stocks, indices := 0, 0
+	for _, result := range results {
+		if h.isIndex(result.Symbol) {
+			indices++
+		} else {
+			stocks++
+		}
+	}
+
 	if len(failed) > 0 {
-		emailBody += fmt.Sprintf("\n\nAdvertencia: No fue posible obtener datos para: %s", strings.Join(failed, ", "))
+		emailBody += fmt.Sprintf("\n\n⚠️ Advertencia: No fue posible obtener datos para: %s", strings.Join(failed, ", "))
+
+		// Verificar si faltan índices específicamente
+		failedIndices := 0
+		for _, failedSymbol := range failed {
+			if h.isIndex(failedSymbol) {
+				failedIndices++
+			}
+		}
+
+		if failedIndices > 0 && indices == 0 {
+			emailBody += `
+
+<div class="warning">
+<strong>📊 Información sobre índices:</strong><br>
+No se pudieron obtener datos de índices. Posibles causas:<br>
+• Límite de API alcanzado (Alpha Vantage: 25 llamadas/día)<br>
+• Los límites de API se renuevan cada 24 horas<br>
+• Considere usar solo datos de stocks o actualizar a un plan premium
+</div>`
+		}
 	}
 
 	// Enviar email
@@ -496,8 +537,42 @@ func (h *APIHandler) SendFullReport(c *gin.Context) {
 	subject := fmt.Sprintf("📊 Reporte Completo - %s", dateStr)
 	emailBody := fmt.Sprintf("Se adjunta el reporte completo con %d símbolos para la fecha %s.", len(allResults), dateStr)
 
+	// Contar tipos de datos obtenidos
+	stocks, indices := 0, 0
+	for _, result := range allResults {
+		if h.isIndex(result.Symbol) {
+			indices++
+		} else {
+			stocks++
+		}
+	}
+
+	emailBody += fmt.Sprintf("\n\n📈 Resumen del reporte:")
+	emailBody += fmt.Sprintf("\n• Stocks obtenidos: %d", stocks)
+	emailBody += fmt.Sprintf("\n• Índices obtenidos: %d", indices)
+
 	if len(allFailed) > 0 {
-		emailBody += fmt.Sprintf("\n\nAdvertencia: No fue posible obtener datos para %d símbolos: %s", len(allFailed), strings.Join(allFailed, ", "))
+		emailBody += fmt.Sprintf("\n\n⚠️ Advertencia: No fue posible obtener datos para %d símbolos: %s", len(allFailed), strings.Join(allFailed, ", "))
+
+		// Verificar si faltan índices específicamente
+		failedIndices := 0
+		for _, failedSymbol := range allFailed {
+			if h.isIndex(failedSymbol) {
+				failedIndices++
+			}
+		}
+
+		if failedIndices > 0 && indices == 0 {
+			emailBody += `
+
+<div class="warning">
+<strong>📊 Información sobre índices:</strong><br>
+No se pudieron obtener datos de índices. Posibles causas:<br>
+• Límite de API alcanzado (Alpha Vantage: 25 llamadas/día)<br>
+• Los límites de API se renuevan cada 24 horas<br>
+• Sistema ahora usa solo FMP (250 llamadas/día para stocks e índices)
+</div>`
+		}
 	}
 
 	// Enviar email

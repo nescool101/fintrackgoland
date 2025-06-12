@@ -170,9 +170,9 @@ EMAIL_RECIPIENT=nescool101@gmail.com
 
 ## 📱 APIs Utilizadas
 
-- **FMP (Financial Modeling Prep):** Datos de stocks
-- **Alpha Vantage:** Datos de índices via ETFs
-- **Límites:** 250 llamadas/día (FMP) + 500 llamadas/día (Alpha Vantage)
+- **FMP (Financial Modeling Prep):** Datos de stocks e índices
+- **Límites:** 250 llamadas/día (FMP)
+- **Nota:** Alpha Vantage se deshabilitó debido a límite muy bajo (25 llamadas/día)
 
 ## 🚀 Cómo Iniciar el Servicio
 

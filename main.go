@@ -21,15 +21,13 @@ func main() {
 	cfg := config.LoadConfig()
 
 	/*
-	 * Usar servicio híbrido: FMP para stocks + Alpha Vantage para índices
-	 * FMP API: 250 llamadas gratis/día para stocks
-	 * Alpha Vantage: 500 llamadas gratis/día para índices (via ETFs)
-	 * Total: 750 llamadas gratis/día
+	 * Usar solo FMP para todo: stocks + índices
+	 * FMP API: 250 llamadas gratis/día para stocks e índices
+	 * Alpha Vantage tiene límite muy bajo (25 llamadas/día)
 	 */
-	log.Println("🚀 Usando servicio híbrido: FMP (stocks) + Alpha Vantage (índices)")
+	log.Println("🚀 Usando solo FMP para stocks e índices")
 	log.Printf("📊 FMP API Key: %s... (250 llamadas/día)", cfg.FMPAPIKey[:8])
-	log.Printf("📈 Alpha Vantage Key: %s... (500 llamadas/día)", cfg.AlphaVantageKey[:8])
-	dataService := service.NewHybridService(cfg.FMPAPIKey, cfg.AlphaVantageKey)
+	dataService := service.NewFMPService(cfg.FMPAPIKey)
 
 	// Configurar Gin en modo release para producción
 	if os.Getenv("GIN_MODE") != "debug" {
@@ -74,8 +72,8 @@ func main() {
 	log.Printf("🎯 Índices objetivo configurados: %v", targetIndices)
 	log.Printf("📈 Stocks configurados: %d símbolos", len(stockSymbols))
 	log.Printf("📊 Total de símbolos a procesar: %d", len(symbols))
-	log.Printf("🔑 Servicio híbrido: FMP (%d stocks) + Alpha Vantage (%d índices) = %d total llamadas/día",
-		len(stockSymbols), len(targetIndices), 250+500)
+	log.Printf("🔑 Servicio FMP: %d stocks + %d índices = 250 llamadas/día total",
+		len(stockSymbols), len(targetIndices))
 
 	// Configurar servidor HTTP con Gin
 	server := &gin.Engine{}
