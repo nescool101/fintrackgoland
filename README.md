@@ -78,6 +78,12 @@ AUTH_USERNAME=admin
 AUTH_PASSWORD=secure_password123
 ```
 
+## 🔒 IMPORTANTE: Seguridad
+
+⚠️ **ANTES DE EMPEZAR**: Lee la [Guía de Seguridad](SECURITY_GUIDE.md) para proteger tus credenciales.
+
+**NUNCA subas archivos `.env` o credenciales reales a GitHub.**
+
 ## Instalación y Uso
 
 ### 1. Clonar el repositorio
@@ -91,10 +97,15 @@ cd fintrackgoland
 go mod download
 ```
 
-### 3. Configurar variables de entorno
+### 3. Configurar variables de entorno (SEGURO)
 ```bash
-cp .env.example .env
-# Editar .env con tus claves de API
+# Usar plantilla segura
+cp env.template .env
+
+# Editar .env con tus credenciales reales
+nano .env
+
+# ⚠️ IMPORTANTE: Lee SECURITY_GUIDE.md antes de continuar
 ```
 
 ### 4. Ejecutar la aplicación

@@ -6,11 +6,19 @@ Se ha agregado un nuevo endpoint `POST /api/excel/send` que permite:
 2. Generar un archivo Excel con la información
 3. Enviar el archivo por correo electrónico a nescool101@gmail.com
 
-## 🔗 Endpoint
+## 🔗 Endpoints
 
+### 1. Reporte Básico (Solo Índices)
 **URL:** `POST /api/excel/send`  
 **Autenticación:** Basic Auth (nescao3:fintrack2024)  
-**Contenido:** `application/json`
+**Contenido:** `application/json`  
+**Descripción:** Genera reporte con índices objetivo (6 símbolos) o símbolos específicos
+
+### 2. Reporte Completo (Todos los Símbolos)
+**URL:** `POST /api/excel/full`  
+**Autenticación:** Basic Auth (nescao3:fintrack2024)  
+**Contenido:** `application/json`  
+**Descripción:** Genera reporte completo con todos los símbolos (54 total) usando procesamiento por lotes
 
 ## 📋 Parámetros (Opcionales)
 
@@ -22,25 +30,36 @@ Se ha agregado un nuevo endpoint `POST /api/excel/send` que permite:
 
 ## 📤 Ejemplos de Uso
 
-### 1. Envío básico (valores por defecto)
+### Reporte Básico (Solo Índices)
+
+#### 1. Envío básico (solo índices)
 ```bash
 curl -X POST \
   -u "nescao3:fintrack2024" \
   "http://localhost:8080/api/excel/send"
 ```
 
-### 2. Envío con símbolos específicos
+#### 2. Envío con símbolos específicos
 ```bash
 curl -X POST \
   -u "nescao3:fintrack2024" \
-  "http://localhost:8080/api/excel/send?symbols=SPX,NDX&date=2024-01-15"
+  "http://localhost:8080/api/excel/send?symbols=SPX,NDX,AAPL,NVDA&date=2024-01-15"
 ```
 
-### 3. Envío con destinatario personalizado
+### Reporte Completo (Todos los Símbolos)
+
+#### 3. Reporte completo con todos los símbolos
 ```bash
 curl -X POST \
   -u "nescao3:fintrack2024" \
-  "http://localhost:8080/api/excel/send?recipient=otro@email.com"
+  "http://localhost:8080/api/excel/full"
+```
+
+#### 4. Reporte completo con fecha específica
+```bash
+curl -X POST \
+  -u "nescao3:fintrack2024" \
+  "http://localhost:8080/api/excel/full?date=2024-01-15"
 ```
 
 ## 📊 Estructura del Archivo Excel
@@ -48,6 +67,7 @@ curl -X POST \
 El archivo Excel generado contiene **2 hojas**:
 
 ### Hoja 1: "Reporte_Financiero"
+Datos combinados de todos los símbolos con columnas:
 | Columna | Descripción |
 |---------|-------------|
 | Tipo | Stock o Índice |
@@ -61,7 +81,13 @@ El archivo Excel generado contiene **2 hojas**:
 | Fuente | API de origen |
 | Estado | Estado de la consulta |
 
-### Hoja 2: "Resumen"
+### Hoja 2: "Stocks"
+Datos específicos de stocks únicamente
+
+### Hoja 3: "Indices"
+Datos específicos de índices únicamente
+
+### Hoja 4: "Resumen"
 - Total de símbolos procesados
 - Distribución por tipo (Stocks vs Índices)
 - Fuentes de datos utilizadas

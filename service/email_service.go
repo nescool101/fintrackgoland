@@ -28,7 +28,7 @@ func NewEmailService(host string, port int, username, password string) *EmailSer
 }
 
 // SendExcelReport envía un reporte Excel por correo electrónico
-func (es *EmailService) SendExcelReport(recipient, subject, body string, excelData []byte, filename string) error {
+func (es *EmailService) SendExcelReport(recipient, subject, body string, excelData []byte, filename string, symbolCount int) error {
 	// Crear mensaje
 	m := gomail.NewMessage()
 
@@ -38,7 +38,7 @@ func (es *EmailService) SendExcelReport(recipient, subject, body string, excelDa
 	m.SetHeader("Subject", subject)
 
 	// Configurar cuerpo del mensaje
-	m.SetBody("text/html", es.buildHTMLBody(body))
+	m.SetBody("text/html", es.buildHTMLBody(body, symbolCount))
 
 	// Adjuntar archivo Excel
 	m.Attach(filename, gomail.SetCopyFunc(func(w io.Writer) error {
@@ -59,7 +59,7 @@ func (es *EmailService) SendExcelReport(recipient, subject, body string, excelDa
 }
 
 // buildHTMLBody construye el cuerpo HTML del correo
-func (es *EmailService) buildHTMLBody(message string) string {
+func (es *EmailService) buildHTMLBody(message string, symbolCount int) string {
 	return fmt.Sprintf(`
 <!DOCTYPE html>
 <html>
@@ -112,13 +112,15 @@ func (es *EmailService) buildHTMLBody(message string) string {
         
         <p>En el archivo Excel adjunto encontrará:</p>
         <ul>
-            <li><strong>Hoja "Reporte_Financiero":</strong> Datos detallados de stocks e índices</li>
+            <li><strong>Hoja "Reporte_Financiero":</strong> Todos los datos combinados</li>
+            <li><strong>Hoja "Stocks":</strong> Datos específicos de stocks</li>
+            <li><strong>Hoja "Indices":</strong> Datos específicos de índices</li>
             <li><strong>Hoja "Resumen":</strong> Estadísticas generales del reporte</li>
         </ul>
         
         <p>Los datos incluyen información de apertura, cierre, máximos, mínimos y volumen para cada símbolo.</p>
         
-        <p class="highlight">📈 Símbolos incluidos: SPX, NDX, DJI, NYA, ES_F, NQ_F</p>
+        <p class="highlight">📈 Símbolos procesados: %d símbolos totales</p>
     </div>
     
     <div class="footer">
@@ -127,7 +129,7 @@ func (es *EmailService) buildHTMLBody(message string) string {
     </div>
 </body>
 </html>
-`, message, time.Now().Format("2006-01-02 15:04:05"))
+`, message, symbolCount, time.Now().Format("2006-01-02 15:04:05"))
 }
 
 // SendSimpleEmail envía un correo simple sin adjuntos

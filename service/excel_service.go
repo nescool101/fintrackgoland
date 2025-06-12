@@ -91,8 +91,16 @@ func (es *ExcelService) GenerateStockReport(data []models.StockData, filename st
 		f.SetColWidth(sheetName, col, col, widths[i])
 	}
 
-	// Agregar hoja de resumen
+	// Agregar hojas adicionales
 	es.addSummarySheet(f, data)
+	es.addStocksSheet(f, data)
+	es.addIndicesSheet(f, data)
+
+	// Eliminar la hoja por defecto "Sheet1" si existe
+	err = f.DeleteSheet("Sheet1")
+	if err != nil {
+		// Si no se puede eliminar, no es crítico, continuar
+	}
 
 	// Establecer la hoja principal como activa
 	f.SetActiveSheet(index)
@@ -159,4 +167,116 @@ func (es *ExcelService) addSummarySheet(f *excelize.File, data []models.StockDat
 
 	// Ajustar ancho de columna
 	f.SetColWidth(summarySheet, "A", "A", 35)
+}
+
+// addStocksSheet agrega una hoja específica para stocks
+func (es *ExcelService) addStocksSheet(f *excelize.File, data []models.StockData) {
+	stocksSheet := "Stocks"
+	_, err := f.NewSheet(stocksSheet)
+	if err != nil {
+		return
+	}
+
+	// Filtrar solo stocks
+	var stocks []models.StockData
+	for _, item := range data {
+		if es.determineType(item.Symbol) == "Stock" {
+			stocks = append(stocks, item)
+		}
+	}
+
+	if len(stocks) == 0 {
+		f.SetCellValue(stocksSheet, "A1", "No hay datos de stocks disponibles")
+		return
+	}
+
+	// Configurar encabezados
+	headers := []string{
+		"Símbolo", "Fecha", "Apertura", "Máximo",
+		"Mínimo", "Cierre", "Volumen", "Fuente", "Estado",
+	}
+
+	// Escribir encabezados
+	for i, header := range headers {
+		cell := fmt.Sprintf("%c1", 'A'+i)
+		f.SetCellValue(stocksSheet, cell, header)
+	}
+
+	// Escribir datos de stocks
+	for i, stock := range stocks {
+		row := i + 2
+		f.SetCellValue(stocksSheet, fmt.Sprintf("A%d", row), stock.Symbol)
+		f.SetCellValue(stocksSheet, fmt.Sprintf("B%d", row), stock.Date)
+		f.SetCellValue(stocksSheet, fmt.Sprintf("C%d", row), stock.Open)
+		f.SetCellValue(stocksSheet, fmt.Sprintf("D%d", row), stock.High)
+		f.SetCellValue(stocksSheet, fmt.Sprintf("E%d", row), stock.Low)
+		f.SetCellValue(stocksSheet, fmt.Sprintf("F%d", row), stock.Close)
+		f.SetCellValue(stocksSheet, fmt.Sprintf("G%d", row), stock.Volume)
+		f.SetCellValue(stocksSheet, fmt.Sprintf("H%d", row), stock.From)
+		f.SetCellValue(stocksSheet, fmt.Sprintf("I%d", row), stock.Status)
+	}
+
+	// Ajustar ancho de columnas
+	columns := []string{"A", "B", "C", "D", "E", "F", "G", "H", "I"}
+	widths := []float64{12, 12, 12, 12, 12, 12, 15, 15, 10}
+
+	for i, col := range columns {
+		f.SetColWidth(stocksSheet, col, col, widths[i])
+	}
+}
+
+// addIndicesSheet agrega una hoja específica para índices
+func (es *ExcelService) addIndicesSheet(f *excelize.File, data []models.StockData) {
+	indicesSheet := "Indices"
+	_, err := f.NewSheet(indicesSheet)
+	if err != nil {
+		return
+	}
+
+	// Filtrar solo índices
+	var indices []models.StockData
+	for _, item := range data {
+		if es.determineType(item.Symbol) == "Índice" {
+			indices = append(indices, item)
+		}
+	}
+
+	if len(indices) == 0 {
+		f.SetCellValue(indicesSheet, "A1", "No hay datos de índices disponibles")
+		return
+	}
+
+	// Configurar encabezados
+	headers := []string{
+		"Símbolo", "Fecha", "Apertura", "Máximo",
+		"Mínimo", "Cierre", "Volumen", "Fuente", "Estado",
+	}
+
+	// Escribir encabezados
+	for i, header := range headers {
+		cell := fmt.Sprintf("%c1", 'A'+i)
+		f.SetCellValue(indicesSheet, cell, header)
+	}
+
+	// Escribir datos de índices
+	for i, index := range indices {
+		row := i + 2
+		f.SetCellValue(indicesSheet, fmt.Sprintf("A%d", row), index.Symbol)
+		f.SetCellValue(indicesSheet, fmt.Sprintf("B%d", row), index.Date)
+		f.SetCellValue(indicesSheet, fmt.Sprintf("C%d", row), index.Open)
+		f.SetCellValue(indicesSheet, fmt.Sprintf("D%d", row), index.High)
+		f.SetCellValue(indicesSheet, fmt.Sprintf("E%d", row), index.Low)
+		f.SetCellValue(indicesSheet, fmt.Sprintf("F%d", row), index.Close)
+		f.SetCellValue(indicesSheet, fmt.Sprintf("G%d", row), index.Volume)
+		f.SetCellValue(indicesSheet, fmt.Sprintf("H%d", row), index.From)
+		f.SetCellValue(indicesSheet, fmt.Sprintf("I%d", row), index.Status)
+	}
+
+	// Ajustar ancho de columnas
+	columns := []string{"A", "B", "C", "D", "E", "F", "G", "H", "I"}
+	widths := []float64{12, 12, 12, 12, 12, 12, 15, 15, 10}
+
+	for i, col := range columns {
+		f.SetColWidth(indicesSheet, col, col, widths[i])
+	}
 }

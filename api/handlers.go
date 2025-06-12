@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/nescool101/fintrackgoland/config"
+	"github.com/nescool101/fintrackgoland/models"
 	"github.com/nescool101/fintrackgoland/service"
 	"github.com/nescool101/fintrackgoland/utils"
 )
@@ -323,8 +324,13 @@ func (h *APIHandler) SendExcelReport(c *gin.Context) {
 			symbols[i] = strings.TrimSpace(symbol)
 		}
 	} else {
-		// Usar índices objetivo por defecto
+		// Usar todos los símbolos por defecto (índices + stocks)
+		// Para evitar problemas de rate limiting, usar solo los índices objetivo por defecto
+		// Los usuarios pueden especificar símbolos específicos si necesitan stocks
 		symbols = service.GetTargetIndices()
+
+		// TODO: En el futuro, implementar procesamiento por lotes para incluir todos los stocks
+		// symbols = service.GetExtendedSymbols()
 	}
 
 	// Determinar fecha
@@ -383,7 +389,7 @@ func (h *APIHandler) SendExcelReport(c *gin.Context) {
 	}
 
 	// Enviar email
-	err = h.EmailService.SendExcelReport(recipientEmail, subject, emailBody, excelData, filename)
+	err = h.EmailService.SendExcelReport(recipientEmail, subject, emailBody, excelData, filename, len(results))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error enviando email: " + err.Error(),
@@ -401,5 +407,118 @@ func (h *APIHandler) SendExcelReport(c *gin.Context) {
 		"excel_filename":   filename,
 		"excel_size_bytes": len(excelData),
 		"data_summary":     results,
+	})
+}
+
+// SendFullReport endpoint para generar reporte completo con todos los símbolos (stocks + índices)
+func (h *APIHandler) SendFullReport(c *gin.Context) {
+	dateStr := c.Query("date")
+	recipientEmail := c.Query("recipient")
+
+	// Usar email por defecto si no se proporciona
+	if recipientEmail == "" {
+		recipientEmail = "nescool101@gmail.com"
+	}
+
+	// Determinar fecha
+	if dateStr == "" {
+		dateStr = time.Now().Format("2006-01-02")
+	}
+
+	// Validar formato de fecha
+	if _, err := time.Parse("2006-01-02", dateStr); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Formato de fecha inválido. Use YYYY-MM-DD",
+		})
+		return
+	}
+
+	// Limpiar resultados previos
+	h.DataService.ClearResults()
+
+	// Obtener todos los símbolos
+	allSymbols := service.GetExtendedSymbols()
+	dates := []string{dateStr}
+
+	// Procesar en lotes para evitar rate limiting
+	batchSize := 10
+	var allResults []models.StockData
+	var allFailed []string
+
+	for i := 0; i < len(allSymbols); i += batchSize {
+		end := i + batchSize
+		if end > len(allSymbols) {
+			end = len(allSymbols)
+		}
+
+		batch := allSymbols[i:end]
+
+		// Limpiar resultados del lote anterior
+		h.DataService.ClearResults()
+
+		// Procesar lote
+		err := h.DataService.FetchWeeklyData(batch, dates)
+		if err != nil {
+			// Continuar con el siguiente lote si hay error
+			continue
+		}
+
+		// Recopilar resultados del lote
+		batchResults := h.DataService.GetResults()
+		batchFailed := h.DataService.GetFailed()
+
+		allResults = append(allResults, batchResults...)
+		allFailed = append(allFailed, batchFailed...)
+
+		// Pausa pequeña entre lotes para evitar rate limiting
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	// Verificar si hay datos
+	if len(allResults) == 0 {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "No se encontraron datos para ningún símbolo",
+		})
+		return
+	}
+
+	// Generar archivo Excel
+	filename := fmt.Sprintf("Reporte_Completo_%s.xlsx", dateStr)
+	excelData, err := h.ExcelService.GenerateStockReport(allResults, filename)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Error generando archivo Excel: " + err.Error(),
+		})
+		return
+	}
+
+	// Preparar mensaje de email
+	subject := fmt.Sprintf("📊 Reporte Completo - %s", dateStr)
+	emailBody := fmt.Sprintf("Se adjunta el reporte completo con %d símbolos para la fecha %s.", len(allResults), dateStr)
+
+	if len(allFailed) > 0 {
+		emailBody += fmt.Sprintf("\n\nAdvertencia: No fue posible obtener datos para %d símbolos: %s", len(allFailed), strings.Join(allFailed, ", "))
+	}
+
+	// Enviar email
+	err = h.EmailService.SendExcelReport(recipientEmail, subject, emailBody, excelData, filename, len(allResults))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Error enviando email: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":           "Reporte completo enviado exitosamente",
+		"recipient":         recipientEmail,
+		"date":              dateStr,
+		"symbols_total":     len(allSymbols),
+		"symbols_success":   len(allResults),
+		"symbols_failed":    len(allFailed),
+		"excel_filename":    filename,
+		"excel_size_bytes":  len(excelData),
+		"batches_processed": (len(allSymbols) + batchSize - 1) / batchSize,
+		"data_summary":      allResults,
 	})
 }
