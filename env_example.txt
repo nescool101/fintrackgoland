@@ -1,0 +1,72 @@
+# =============================================================================
+# CONFIGURACIÓN DE API FINANCIERA - EJEMPLO
+# =============================================================================
+
+# API Key de Financial Modeling Prep (para stocks)
+# 250 llamadas gratis por día
+# Registrarse en: https://financialmodelingprep.com/developer
+FMP_API_KEY=I0aJZOme1kFaQE7li29IKFfk2V6btcqB
+
+# API Key de Alpha Vantage (para índices via ETFs)
+# 500 llamadas gratis por día
+# Registrarse en: https://www.alphavantage.co/support/#api-key
+ALPHA_VANTAGE_KEY=PZHRYXFUZL3STKAV
+
+# =============================================================================
+# CONFIGURACIÓN DE BASE DE DATOS
+# =============================================================================
+DATABASE_URL=postgresql://user:password@localhost/fintrack
+
+# =============================================================================
+# CONFIGURACIÓN DE EMAIL (GMAIL SMTP)
+# =============================================================================
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=nescool10001@gmail.com
+EMAIL_PASS=bndp fcme oyhh udyz
+EMAIL_RECIPIENT=destinatario@ejemplo.com
+
+# Nota: EMAIL_PASS debe ser una "Contraseña de aplicación" de Gmail, no tu contraseña normal
+# Para generar una contraseña de aplicación:
+# 1. Ve a tu cuenta de Google
+# 2. Seguridad -> Verificación en dos pasos
+# 3. Contraseñas de aplicaciones
+# 4. Selecciona "Correo" y "Otro dispositivo personalizado"
+# 5. Usa la contraseña generada aquí
+
+# =============================================================================
+# CONFIGURACIÓN DE AUTENTICACIÓN
+# =============================================================================
+AUTH_USERNAME=admin
+AUTH_PASSWORD=tu_password_seguro
+
+# =============================================================================
+# CONFIGURACIÓN DE COMPORTAMIENTO
+# =============================================================================
+
+# Ejecutar cron automático (true/false)
+RUN_CRON=true
+
+# Modo de depuración para Gin (debug/release)
+GIN_MODE=release
+
+# =============================================================================
+# ÍNDICES SOPORTADOS CON FMP API
+# =============================================================================
+# SPX  -> ^GSPC (S&P 500 Index)
+# NDX  -> ^IXIC (NASDAQ Composite)
+# DJI  -> ^DJI  (Dow Jones Industrial Average)
+# NYA  -> ^NYA  (NYSE Composite Index)
+# ES_F -> ES=F  (E-mini S&P 500 Futures)
+# NQ_F -> NQ=F  (E-mini NASDAQ 100 Futures)
+# =============================================================================
+
+# =============================================================================
+# CONFIGURACIÓN DE SEGURIDAD
+# =============================================================================
+# ⚠️  IMPORTANTE: 
+# - Nunca subas este archivo a repositorios públicos
+# - Usa un archivo .env local para desarrollo
+# - En producción, usa variables de entorno del sistema
+# - Cambia las contraseñas por defecto
+# ============================================================================= 

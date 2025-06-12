@@ -9,16 +9,17 @@ import (
 )
 
 type Config struct {
-	APIKey       string
-	DatabaseURL  string
-	EmailHost    string
-	EmailPort    int
-	EmailUser    string
-	EmailPass    string
-	Recipient    string
-	RunCron      bool
-	AuthUsername string
-	AuthPassword string
+	FMPAPIKey       string // Financial Modeling Prep API Key (primary)
+	AlphaVantageKey string // Alpha Vantage API Key (for indices)
+	DatabaseURL     string
+	EmailHost       string
+	EmailPort       int
+	EmailUser       string
+	EmailPass       string
+	Recipient       string
+	RunCron         bool
+	AuthUsername    string
+	AuthPassword    string
 }
 
 func LoadConfig() *Config {
@@ -37,20 +38,23 @@ func LoadConfig() *Config {
 	}
 
 	config := &Config{
-		APIKey:      os.Getenv("API_KEY"),
-		DatabaseURL: os.Getenv("DATABASE_URL"),
-		EmailHost:   os.Getenv("EMAIL_HOST"),
-		EmailPort:   emailPort,
-		EmailUser:   os.Getenv("EMAIL_USER"),
-		EmailPass:   os.Getenv("EMAIL_PASS"),
-		Recipient:   os.Getenv("EMAIL_RECIPIENT"),
-		RunCron:     os.Getenv("RUN_CRON") == "true",
+		FMPAPIKey:       os.Getenv("FMP_API_KEY"),       // Financial Modeling Prep API Key
+		AlphaVantageKey: os.Getenv("ALPHA_VANTAGE_KEY"), // Alpha Vantage API Key
+		DatabaseURL:     os.Getenv("DATABASE_URL"),
+		EmailHost:       os.Getenv("EMAIL_HOST"),
+		EmailPort:       emailPort,
+		EmailUser:       os.Getenv("EMAIL_USER"),
+		EmailPass:       os.Getenv("EMAIL_PASS"),
+		Recipient:       os.Getenv("EMAIL_RECIPIENT"),
+		RunCron:         os.Getenv("RUN_CRON") == "true",
+		AuthUsername:    os.Getenv("AUTH_USERNAME"),
+		AuthPassword:    os.Getenv("AUTH_PASSWORD"),
 	}
 
 	// Basic validation
-	if config.APIKey == "" || config.DatabaseURL == "" || config.EmailHost == "" ||
-		config.EmailUser == "" || config.EmailPass == "" || config.Recipient == "" ||
-		config.AuthUsername == "" || config.AuthPassword == "" {
+	if config.FMPAPIKey == "" || config.AlphaVantageKey == "" || config.DatabaseURL == "" ||
+		config.EmailHost == "" || config.EmailUser == "" || config.EmailPass == "" ||
+		config.Recipient == "" || config.AuthUsername == "" || config.AuthPassword == "" {
 		log.Fatal("Missing required environment variables")
 	}
 
