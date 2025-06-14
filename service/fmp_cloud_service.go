@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/nescool101/fintrackgoland/models"
 )
@@ -77,6 +78,9 @@ func (fcs *FMPCloudService) FetchData(symbol, date string) {
 	}
 
 	fcs.addResult(stockData)
+
+	// Pausa de 1 segundo para evitar saturar el servidor
+	time.Sleep(1 * time.Second)
 }
 
 // FetchWeeklyData obtiene datos para múltiples símbolos y fechas
@@ -91,6 +95,8 @@ func (fcs *FMPCloudService) FetchWeeklyData(symbols []string, dates []string) {
 			go func(sym, dt string) {
 				defer wg.Done()
 				fcs.FetchData(sym, dt)
+				// Pausa adicional de 1 segundo para evitar saturar el servidor
+				time.Sleep(1 * time.Second)
 				<-semaphore
 			}(symbol, date)
 		}

@@ -59,7 +59,7 @@ func main() {
 		/* Endpoints para generar y enviar reportes */
 		protected.POST("/report/send", apiHandler.SendWeeklyReport) // POST /api/report/send
 		protected.POST("/excel/send", apiHandler.SendExcelReport)   // POST /api/excel/send?symbols=SPX,NDX&date=2024-01-15&recipient=nescool101@gmail.com
-		protected.POST("/excel/full", apiHandler.SendFullReport)    // POST /api/excel/full?date=2024-01-15&recipient=nescool101@gmail.com (todos los símbolos)
+		protected.GET("/excel/full", apiHandler.SendFullReport)     // GET /api/excel/full?date=2024-01-15&recipient=nescool101@gmail.com (todos los símbolos)
 	}
 
 	// Obtener símbolos y fechas para el cron
@@ -91,7 +91,7 @@ func main() {
 		log.Println("   GET  /api/weekly                - Datos semanales")
 		log.Println("   POST /api/report/send           - Enviar reporte semanal")
 		log.Println("   POST /api/excel/send            - Generar y enviar Excel a nescool101@gmail.com")
-		log.Println("   POST /api/excel/full            - Generar reporte completo (54 símbolos) con procesamiento por lotes")
+		log.Println("   GET  /api/excel/full            - Generar reporte completo (54 símbolos) con procesamiento por lotes")
 
 		if err := router.Run(":8080"); err != nil {
 			log.Fatalf("Error iniciando servidor: %v", err)

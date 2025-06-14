@@ -15,17 +15,21 @@ Se ha agregado un nuevo endpoint `POST /api/excel/send` que permite:
 **Descripción:** Genera reporte con índices objetivo (6 símbolos) o símbolos específicos
 
 ### 2. Reporte Completo (Todos los Símbolos)
-**URL:** `POST /api/excel/full`  
+**URL:** `GET /api/excel/full`  
 **Autenticación:** Basic Auth (nescao3:fintrack2024)  
-**Contenido:** `application/json`  
 **Descripción:** Genera reporte completo con todos los símbolos (54 total) usando procesamiento por lotes
+
+**⏰ Lógica de Fecha Automática:**
+- **Antes de 3 PM:** Usa datos del día anterior
+- **Después de 3 PM:** Usa datos del día actual
+- **Fecha manual:** Especifica `?date=YYYY-MM-DD` para anular la lógica automática
 
 ## 📋 Parámetros (Opcionales)
 
 | Parámetro | Tipo | Descripción | Valor por Defecto |
 |-----------|------|-------------|-------------------|
 | `symbols` | string | Símbolos separados por coma | `SPX,NDX,DJI,NYA,ES_F,NQ_F` |
-| `date` | string | Fecha en formato YYYY-MM-DD | Fecha actual |
+| `date` | string | Fecha en formato YYYY-MM-DD | Automática (ver lógica de 3 PM) |
 | `recipient` | string | Dirección de correo electrónico | `nescool101@gmail.com,paulocesarcelis@gmail.com` |
 
 ## 📤 Ejemplos de Uso
@@ -48,19 +52,53 @@ curl -X POST \
 
 ### Reporte Completo (Todos los Símbolos)
 
-#### 3. Reporte completo con todos los símbolos
+#### 3. Reporte completo con fecha automática
 ```bash
-curl -X POST \
+curl -X GET \
   -u "nescao3:fintrack2024" \
   "http://localhost:8080/api/excel/full"
+# Antes de 3 PM: usa datos del día anterior
+# Después de 3 PM: usa datos del día actual
+```
+
+#### 3b. Ver headers de fecha procesada
+```bash
+curl -X GET \
+  -u "nescao3:fintrack2024" \
+  -I "http://localhost:8080/api/excel/full"
+# Muestra solo los headers HTTP incluyendo X-Processed-Date
 ```
 
 #### 4. Reporte completo con fecha específica
 ```bash
-curl -X POST \
+curl -X GET \
   -u "nescao3:fintrack2024" \
   "http://localhost:8080/api/excel/full?date=2024-01-15"
+# Anula la lógica automática y usa la fecha especificada
 ```
+
+## ⏰ Lógica de Fecha Automática (Solo para `/api/excel/full`)
+
+El endpoint `/api/excel/full` implementa una lógica inteligente para determinar qué fecha usar automáticamente:
+
+### 🕐 Antes de las 3:00 PM
+- **Fecha utilizada:** Día anterior
+- **Razón:** Los datos del mercado del día actual aún no están completos
+- **Ejemplo:** Si son las 10:00 AM del 15 de enero, usará datos del 14 de enero
+
+### 🕒 Después de las 3:00 PM  
+- **Fecha utilizada:** Día actual
+- **Razón:** Los datos del mercado del día ya están disponibles
+- **Ejemplo:** Si son las 4:00 PM del 15 de enero, usará datos del 15 de enero
+
+### 📅 Anular la Lógica Automática
+Para usar una fecha específica, simplemente agrega el parámetro `date`:
+```bash
+curl -X GET -u "nescao3:fintrack2024" \
+  "http://localhost:8080/api/excel/full?date=2024-01-10"
+```
+
+**Nota:** Esta lógica solo aplica al endpoint `/api/excel/full`. El endpoint `/api/excel/send` siempre usa la fecha actual por defecto.
 
 ## 📊 Estructura del Archivo Excel
 
@@ -95,14 +133,27 @@ Datos específicos de índices únicamente
 
 ## 📧 Email Automatizado
 
-El correo enviado incluye:
-- **Destinatarios:** nescool101@gmail.com, paulocesarcelis@gmail.com
+### 📮 Envío Individual
+El sistema envía **correos individuales** a cada destinatario:
+- **Destinatarios por defecto:** nescool101@gmail.com, paulocesarcelis@gmail.com
+- **Método:** Un correo separado para cada dirección
+- **Tolerancia a fallos:** Si un email falla, los otros se envían normalmente
+
+### 📋 Contenido del Correo
 - **Asunto:** 📊 Reporte Financiero - [FECHA]
 - **Cuerpo:** Mensaje HTML con información del reporte
 - **Adjunto:** Archivo Excel con nombre `Reporte_Financiero_YYYY-MM-DD.xlsx`
 
+### 📊 Logs de Envío
+```
+✅ Correo enviado exitosamente a: nescool101@gmail.com
+✅ Correo enviado exitosamente a: paulocesarcelis@gmail.com
+📧 Correo enviado exitosamente a: [nescool101@gmail.com paulocesarcelis@gmail.com] (2 de 2 destinatarios)
+```
+
 ## ✅ Respuesta de Éxito
 
+### Respuesta JSON (Reporte Básico - `/api/excel/send`)
 ```json
 {
   "message": "Reporte enviado exitosamente",
@@ -128,6 +179,36 @@ El correo enviado incluye:
 }
 ```
 
+### Respuesta JSON (Reporte Completo - `/api/excel/full`)
+```json
+{
+  "message": "Reporte completo enviado exitosamente",
+  "recipient": "nescool101@gmail.com,paulocesarcelis@gmail.com",
+  "date": "2024-01-14",
+  "symbols_total": 54,
+  "symbols_success": 48,
+  "symbols_failed": 6,
+  "excel_filename": "Reporte_Completo_2024-01-14.xlsx",
+  "excel_size_bytes": 45678,
+  "batches_processed": 6,
+  "date_logic": "Fecha automática: día anterior (antes de 3 PM)",
+  "server_time": "2024-01-15 10:30:45",
+  "data_summary": [...]
+}
+```
+
+### Headers HTTP (Solo `/api/excel/full`)
+```http
+X-Processed-Date: 2024-01-14
+X-Server-Time: 2024-01-15 10:30:45
+X-Date-Logic: auto-previous-day
+```
+
+**Valores posibles para `X-Date-Logic`:**
+- `manual`: Fecha especificada manualmente con parámetro `?date=`
+- `auto-previous-day`: Fecha automática (día anterior, antes de 3 PM)
+- `auto-current-day`: Fecha automática (día actual, después de 3 PM)
+
 ## ❌ Errores Comunes
 
 ### 400 - Formato de fecha inválido
@@ -148,6 +229,34 @@ El correo enviado incluye:
 ```json
 {
   "error": "Error generando archivo Excel: [detalle]"
+}
+```
+
+### 📧 Manejo de Errores de Email
+
+#### ✅ Envío Parcial Exitoso
+Si al menos un email se envía correctamente, el endpoint retorna éxito:
+```json
+{
+  "message": "Reporte enviado exitosamente",
+  "recipient": "nescool101@gmail.com,paulocesarcelis@gmail.com",
+  ...
+}
+```
+
+**Logs del servidor:**
+```
+✅ Correo enviado exitosamente a: nescool101@gmail.com
+❌ Error enviando a paulocesarcelis@gmail.com: invalid address
+⚠️ Algunos correos fallaron: Error enviando a paulocesarcelis@gmail.com: invalid address
+📧 Correo enviado exitosamente a: [nescool101@gmail.com] (1 de 2 destinatarios)
+```
+
+#### ❌ Fallo Total de Email
+Si ningún email se puede enviar:
+```json
+{
+  "error": "Error enviando email: no se pudo enviar el correo a ningún destinatario: Error enviando a nescool101@gmail.com: [detalle]; Error enviando a paulocesarcelis@gmail.com: [detalle]"
 }
 ```
 

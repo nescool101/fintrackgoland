@@ -143,6 +143,9 @@ func (avs *AlphaVantageService) GetStockData(symbol string) (*models.StockData, 
 		PreMarket:  0, // Alpha Vantage no proporciona datos pre-market en esta consulta
 	}
 
+	// Pausa de 1 segundo para evitar saturar el servidor en llamadas individuales
+	time.Sleep(1 * time.Second)
+
 	return stockData, nil
 }
 
@@ -174,8 +177,8 @@ func (avs *AlphaVantageService) GetMultipleStockData(symbols []string) error {
 			}
 			avs.mu.Unlock()
 
-			/* Pequeña pausa para respetar límites de rate */
-			time.Sleep(200 * time.Millisecond)
+			/* Pausa de 1 segundo para evitar saturar el servidor */
+			time.Sleep(1 * time.Second)
 		}(symbol)
 	}
 

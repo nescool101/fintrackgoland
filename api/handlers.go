@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -461,9 +462,24 @@ func (h *APIHandler) SendFullReport(c *gin.Context) {
 		recipientEmail = "nescool101@gmail.com,paulocesarcelis@gmail.com"
 	}
 
-	// Determinar fecha
+	// Determinar fecha basada en la hora del servidor
 	if dateStr == "" {
-		dateStr = time.Now().Format("2006-01-02")
+		now := time.Now()
+
+		// Si es antes de las 3 PM (15:00), usar el día anterior
+		// Si es después de las 3 PM, usar el día actual
+		if now.Hour() < 15 {
+			// Usar día anterior
+			yesterday := now.AddDate(0, 0, -1)
+			dateStr = yesterday.Format("2006-01-02")
+			log.Printf("⏰ Hora actual: %s (antes de 3 PM) - Usando fecha del día anterior: %s",
+				now.Format("15:04:05"), dateStr)
+		} else {
+			// Usar día actual
+			dateStr = now.Format("2006-01-02")
+			log.Printf("⏰ Hora actual: %s (después de 3 PM) - Usando fecha actual: %s",
+				now.Format("15:04:05"), dateStr)
+		}
 	}
 
 	// Validar formato de fecha
@@ -584,6 +600,19 @@ No se pudieron obtener datos de índices. Posibles causas:<br>
 		return
 	}
 
+	// Agregar header personalizado con la fecha procesada
+	c.Header("X-Processed-Date", dateStr)
+	c.Header("X-Server-Time", time.Now().Format("2006-01-02 15:04:05"))
+	c.Header("X-Date-Logic", func() string {
+		if c.Query("date") != "" {
+			return "manual"
+		}
+		if time.Now().Hour() < 15 {
+			return "auto-previous-day"
+		}
+		return "auto-current-day"
+	}())
+
 	c.JSON(http.StatusOK, gin.H{
 		"message":           "Reporte completo enviado exitosamente",
 		"recipient":         recipientEmail,
@@ -595,5 +624,15 @@ No se pudieron obtener datos de índices. Posibles causas:<br>
 		"excel_size_bytes":  len(excelData),
 		"batches_processed": (len(allSymbols) + batchSize - 1) / batchSize,
 		"data_summary":      allResults,
+		"date_logic": func() string {
+			if c.Query("date") != "" {
+				return "Fecha especificada manualmente"
+			}
+			if time.Now().Hour() < 15 {
+				return "Fecha automática: día anterior (antes de 3 PM)"
+			}
+			return "Fecha automática: día actual (después de 3 PM)"
+		}(),
+		"server_time": time.Now().Format("2006-01-02 15:04:05"),
 	})
 }

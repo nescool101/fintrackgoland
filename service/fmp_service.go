@@ -119,6 +119,9 @@ func (fs *FMPService) FetchData(symbol, date string) {
 	}
 
 	fs.addResult(stockData)
+
+	// Pausa de 1 segundo para evitar saturar el servidor en llamadas individuales
+	time.Sleep(1 * time.Second)
 }
 
 // FetchWeeklyData obtiene datos para múltiples símbolos y fechas
@@ -134,6 +137,8 @@ func (fs *FMPService) FetchWeeklyData(symbols []string, dates []string) error {
 			go func(sym, dt string) {
 				defer wg.Done()
 				fs.FetchData(sym, dt)
+				// Pausa de 1 segundo para evitar saturar el servidor
+				time.Sleep(1 * time.Second)
 				<-semaphore
 			}(symbol, date)
 		}

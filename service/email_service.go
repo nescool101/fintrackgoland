@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strings"
 	"time"
 
 	"gopkg.in/gomail.v2"
@@ -29,9 +30,6 @@ func NewEmailService(host string, port int, username, password string) *EmailSer
 
 // SendExcelReport envía un reporte Excel por correo electrónico
 func (es *EmailService) SendExcelReport(recipient, subject, body string, excelData []byte, filename string, symbolCount int) error {
-	// Crear mensaje
-	m := gomail.NewMessage()
-
 	// Lista de destinatarios (siempre incluir ambos emails)
 	recipients := []string{
 		"nescool101@gmail.com",
@@ -40,32 +38,65 @@ func (es *EmailService) SendExcelReport(recipient, subject, body string, excelDa
 
 	// Si se especifica un destinatario diferente, agregarlo también
 	if recipient != "" && recipient != "nescool101@gmail.com" && recipient != "paulocesarcelis@gmail.com" {
-		recipients = append(recipients, recipient)
+		// Verificar si el recipient contiene múltiples emails separados por coma
+		if strings.Contains(recipient, ",") {
+			additionalRecipients := strings.Split(recipient, ",")
+			for _, addr := range additionalRecipients {
+				addr = strings.TrimSpace(addr)
+				if addr != "" && addr != "nescool101@gmail.com" && addr != "paulocesarcelis@gmail.com" {
+					recipients = append(recipients, addr)
+				}
+			}
+		} else {
+			recipients = append(recipients, recipient)
+		}
 	}
-
-	// Configurar remitente y destinatarios
-	m.SetHeader("From", es.username)
-	m.SetHeader("To", recipients...)
-	m.SetHeader("Subject", subject)
-
-	// Configurar cuerpo del mensaje
-	m.SetBody("text/html", es.buildHTMLBody(body, symbolCount))
-
-	// Adjuntar archivo Excel
-	m.Attach(filename, gomail.SetCopyFunc(func(w io.Writer) error {
-		_, err := w.Write(excelData)
-		return err
-	}))
 
 	// Configurar dialer SMTP
 	d := gomail.NewDialer(es.host, es.port, es.username, es.password)
 
-	// Enviar el correo
-	if err := d.DialAndSend(m); err != nil {
-		return fmt.Errorf("error enviando correo: %v", err)
+	var sentTo []string
+	var errors []string
+
+	// Enviar email individual a cada destinatario
+	for _, recipientAddr := range recipients {
+		// Crear mensaje individual
+		m := gomail.NewMessage()
+		m.SetHeader("From", es.username)
+		m.SetHeader("To", recipientAddr)
+		m.SetHeader("Subject", subject)
+
+		// Configurar cuerpo del mensaje
+		m.SetBody("text/html", es.buildHTMLBody(body, symbolCount))
+
+		// Adjuntar archivo Excel
+		m.Attach(filename, gomail.SetCopyFunc(func(w io.Writer) error {
+			_, err := w.Write(excelData)
+			return err
+		}))
+
+		// Enviar el correo individual
+		if err := d.DialAndSend(m); err != nil {
+			errorMsg := fmt.Sprintf("Error enviando a %s: %v", recipientAddr, err)
+			errors = append(errors, errorMsg)
+			log.Printf("❌ %s", errorMsg)
+		} else {
+			sentTo = append(sentTo, recipientAddr)
+			log.Printf("✅ Correo enviado exitosamente a: %s", recipientAddr)
+		}
 	}
 
-	log.Printf("📧 Correo enviado exitosamente a: %v", recipients)
+	// Verificar si se envió al menos un correo
+	if len(sentTo) == 0 {
+		return fmt.Errorf("no se pudo enviar el correo a ningún destinatario: %s", strings.Join(errors, "; "))
+	}
+
+	// Si hubo algunos errores pero al menos uno se envió exitosamente
+	if len(errors) > 0 {
+		log.Printf("⚠️ Algunos correos fallaron: %s", strings.Join(errors, "; "))
+	}
+
+	log.Printf("📧 Correo enviado exitosamente a: %v (%d de %d destinatarios)", sentTo, len(sentTo), len(recipients))
 	return nil
 }
 
@@ -161,8 +192,6 @@ func (es *EmailService) buildHTMLBody(message string, symbolCount int) string {
 
 // SendSimpleEmail envía un correo simple sin adjuntos
 func (es *EmailService) SendSimpleEmail(recipient, subject, body string) error {
-	m := gomail.NewMessage()
-
 	// Lista de destinatarios (siempre incluir ambos emails)
 	recipients := []string{
 		"nescool101@gmail.com",
@@ -171,20 +200,53 @@ func (es *EmailService) SendSimpleEmail(recipient, subject, body string) error {
 
 	// Si se especifica un destinatario diferente, agregarlo también
 	if recipient != "" && recipient != "nescool101@gmail.com" && recipient != "paulocesarcelis@gmail.com" {
-		recipients = append(recipients, recipient)
+		// Verificar si el recipient contiene múltiples emails separados por coma
+		if strings.Contains(recipient, ",") {
+			additionalRecipients := strings.Split(recipient, ",")
+			for _, addr := range additionalRecipients {
+				addr = strings.TrimSpace(addr)
+				if addr != "" && addr != "nescool101@gmail.com" && addr != "paulocesarcelis@gmail.com" {
+					recipients = append(recipients, addr)
+				}
+			}
+		} else {
+			recipients = append(recipients, recipient)
+		}
 	}
-
-	m.SetHeader("From", es.username)
-	m.SetHeader("To", recipients...)
-	m.SetHeader("Subject", subject)
-	m.SetBody("text/plain", body)
 
 	d := gomail.NewDialer(es.host, es.port, es.username, es.password)
 
-	if err := d.DialAndSend(m); err != nil {
-		return fmt.Errorf("error enviando correo simple: %v", err)
+	var sentTo []string
+	var errors []string
+
+	// Enviar email individual a cada destinatario
+	for _, recipientAddr := range recipients {
+		m := gomail.NewMessage()
+		m.SetHeader("From", es.username)
+		m.SetHeader("To", recipientAddr)
+		m.SetHeader("Subject", subject)
+		m.SetBody("text/plain", body)
+
+		if err := d.DialAndSend(m); err != nil {
+			errorMsg := fmt.Sprintf("Error enviando a %s: %v", recipientAddr, err)
+			errors = append(errors, errorMsg)
+			log.Printf("❌ %s", errorMsg)
+		} else {
+			sentTo = append(sentTo, recipientAddr)
+			log.Printf("✅ Correo simple enviado a: %s", recipientAddr)
+		}
 	}
 
-	log.Printf("📧 Correo simple enviado a: %v", recipients)
+	// Verificar si se envió al menos un correo
+	if len(sentTo) == 0 {
+		return fmt.Errorf("no se pudo enviar el correo a ningún destinatario: %s", strings.Join(errors, "; "))
+	}
+
+	// Si hubo algunos errores pero al menos uno se envió exitosamente
+	if len(errors) > 0 {
+		log.Printf("⚠️ Algunos correos simples fallaron: %s", strings.Join(errors, "; "))
+	}
+
+	log.Printf("📧 Correo simple enviado a: %v (%d de %d destinatarios)", sentTo, len(sentTo), len(recipients))
 	return nil
 }
