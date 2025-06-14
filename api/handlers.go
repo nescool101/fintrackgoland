@@ -322,9 +322,9 @@ func (h *APIHandler) SendExcelReport(c *gin.Context) {
 	dateStr := c.Query("date")
 	recipientEmail := c.Query("recipient")
 
-	// Usar email por defecto si no se proporciona
+	// Usar emails por defecto si no se proporciona
 	if recipientEmail == "" {
-		recipientEmail = "nescool101@gmail.com"
+		recipientEmail = "nescool101@gmail.com,paulocesarcelis@gmail.com"
 	}
 
 	// Determinar símbolos
@@ -456,9 +456,9 @@ func (h *APIHandler) SendFullReport(c *gin.Context) {
 	dateStr := c.Query("date")
 	recipientEmail := c.Query("recipient")
 
-	// Usar email por defecto si no se proporciona
+	// Usar emails por defecto si no se proporciona
 	if recipientEmail == "" {
-		recipientEmail = "nescool101@gmail.com"
+		recipientEmail = "nescool101@gmail.com,paulocesarcelis@gmail.com"
 	}
 
 	// Determinar fecha

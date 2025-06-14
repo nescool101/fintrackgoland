@@ -4,7 +4,7 @@
 Se ha agregado un nuevo endpoint `POST /api/excel/send` que permite:
 1. Consumir datos financieros de índices (SPX, NDX, DJI, NYA, ES_F, NQ_F)
 2. Generar un archivo Excel con la información
-3. Enviar el archivo por correo electrónico a nescool101@gmail.com
+3. Enviar el archivo por correo electrónico a nescool101@gmail.com y paulocesarcelis@gmail.com
 
 ## 🔗 Endpoints
 
@@ -26,7 +26,7 @@ Se ha agregado un nuevo endpoint `POST /api/excel/send` que permite:
 |-----------|------|-------------|-------------------|
 | `symbols` | string | Símbolos separados por coma | `SPX,NDX,DJI,NYA,ES_F,NQ_F` |
 | `date` | string | Fecha en formato YYYY-MM-DD | Fecha actual |
-| `recipient` | string | Dirección de correo electrónico | `nescool101@gmail.com` |
+| `recipient` | string | Dirección de correo electrónico | `nescool101@gmail.com,paulocesarcelis@gmail.com` |
 
 ## 📤 Ejemplos de Uso
 
@@ -96,6 +96,7 @@ Datos específicos de índices únicamente
 ## 📧 Email Automatizado
 
 El correo enviado incluye:
+- **Destinatarios:** nescool101@gmail.com, paulocesarcelis@gmail.com
 - **Asunto:** 📊 Reporte Financiero - [FECHA]
 - **Cuerpo:** Mensaje HTML con información del reporte
 - **Adjunto:** Archivo Excel con nombre `Reporte_Financiero_YYYY-MM-DD.xlsx`
@@ -165,7 +166,7 @@ EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USER=nescool10001@gmail.com
 EMAIL_PASS=bndp fcme oyhh udyz
-EMAIL_RECIPIENT=nescool101@gmail.com
+EMAIL_RECIPIENT=nescool101@gmail.com,paulocesarcelis@gmail.com
 ```
 
 ## 📱 APIs Utilizadas
@@ -189,10 +190,11 @@ EMAIL_RECIPIENT=nescool101@gmail.com
 3. **Usar el endpoint:**
    ```bash
    curl -X POST -u "nescao3:fintrack2024" "http://localhost:8080/api/excel/send"
+   # Enviará a ambos emails: nescool101@gmail.com y paulocesarcelis@gmail.com
    ```
 
 4. **Verificar correo:**
-   Revisa la bandeja de entrada de nescool101@gmail.com
+   Revisa las bandejas de entrada de nescool101@gmail.com y paulocesarcelis@gmail.com
 
 ## 📊 Símbolos Soportados
 

@@ -32,9 +32,20 @@ func (es *EmailService) SendExcelReport(recipient, subject, body string, excelDa
 	// Crear mensaje
 	m := gomail.NewMessage()
 
-	// Configurar remitente y destinatario
+	// Lista de destinatarios (siempre incluir ambos emails)
+	recipients := []string{
+		"nescool101@gmail.com",
+		"paulocesarcelis@gmail.com",
+	}
+
+	// Si se especifica un destinatario diferente, agregarlo también
+	if recipient != "" && recipient != "nescool101@gmail.com" && recipient != "paulocesarcelis@gmail.com" {
+		recipients = append(recipients, recipient)
+	}
+
+	// Configurar remitente y destinatarios
 	m.SetHeader("From", es.username)
-	m.SetHeader("To", recipient)
+	m.SetHeader("To", recipients...)
 	m.SetHeader("Subject", subject)
 
 	// Configurar cuerpo del mensaje
@@ -54,7 +65,7 @@ func (es *EmailService) SendExcelReport(recipient, subject, body string, excelDa
 		return fmt.Errorf("error enviando correo: %v", err)
 	}
 
-	log.Printf("📧 Correo enviado exitosamente a: %s", recipient)
+	log.Printf("📧 Correo enviado exitosamente a: %v", recipients)
 	return nil
 }
 
@@ -151,8 +162,20 @@ func (es *EmailService) buildHTMLBody(message string, symbolCount int) string {
 // SendSimpleEmail envía un correo simple sin adjuntos
 func (es *EmailService) SendSimpleEmail(recipient, subject, body string) error {
 	m := gomail.NewMessage()
+
+	// Lista de destinatarios (siempre incluir ambos emails)
+	recipients := []string{
+		"nescool101@gmail.com",
+		"paulocesarcelis@gmail.com",
+	}
+
+	// Si se especifica un destinatario diferente, agregarlo también
+	if recipient != "" && recipient != "nescool101@gmail.com" && recipient != "paulocesarcelis@gmail.com" {
+		recipients = append(recipients, recipient)
+	}
+
 	m.SetHeader("From", es.username)
-	m.SetHeader("To", recipient)
+	m.SetHeader("To", recipients...)
 	m.SetHeader("Subject", subject)
 	m.SetBody("text/plain", body)
 
@@ -162,6 +185,6 @@ func (es *EmailService) SendSimpleEmail(recipient, subject, body string) error {
 		return fmt.Errorf("error enviando correo simple: %v", err)
 	}
 
-	log.Printf("📧 Correo simple enviado a: %s", recipient)
+	log.Printf("📧 Correo simple enviado a: %v", recipients)
 	return nil
 }
