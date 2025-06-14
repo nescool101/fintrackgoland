@@ -46,6 +46,7 @@ func main() {
 	router.GET("/health", apiHandler.HealthCheck)
 	router.GET("/api/status", apiHandler.GetAPIStatus)
 	router.GET("/api/indices", apiHandler.GetSupportedIndices)
+	router.GET("/api/excel/full", apiHandler.SendFullReport) // GET /api/excel/full?date=2024-01-15&recipient=nescool101@gmail.com (todos los símbolos) - SIN AUTENTICACIÓN
 
 	// Rutas protegidas con autenticación básica
 	protected := router.Group("/api")
@@ -59,7 +60,6 @@ func main() {
 		/* Endpoints para generar y enviar reportes */
 		protected.POST("/report/send", apiHandler.SendWeeklyReport) // POST /api/report/send
 		protected.POST("/excel/send", apiHandler.SendExcelReport)   // POST /api/excel/send?symbols=SPX,NDX&date=2024-01-15&recipient=nescool101@gmail.com
-		protected.GET("/excel/full", apiHandler.SendFullReport)     // GET /api/excel/full?date=2024-01-15&recipient=nescool101@gmail.com (todos los símbolos)
 	}
 
 	// Obtener símbolos y fechas para el cron
@@ -83,15 +83,15 @@ func main() {
 	go func() {
 		log.Println("🚀 Iniciando servidor REST API en puerto :8080")
 		log.Println("📋 Endpoints disponibles:")
-		log.Println("   GET  /health                    - Estado del servicio")
-		log.Println("   GET  /api/status                - Información de APIs")
-		log.Println("   GET  /api/indices               - Índices soportados")
-		log.Println("   GET  /api/stock/:symbol         - Datos de un símbolo")
-		log.Println("   GET  /api/stocks                - Datos de múltiples símbolos")
-		log.Println("   GET  /api/weekly                - Datos semanales")
-		log.Println("   POST /api/report/send           - Enviar reporte semanal")
-		log.Println("   POST /api/excel/send            - Generar y enviar Excel a nescool101@gmail.com")
-		log.Println("   GET  /api/excel/full            - Generar reporte completo (54 símbolos) con procesamiento por lotes")
+		log.Println("   GET  /health                    - Estado del servicio (público)")
+		log.Println("   GET  /api/status                - Información de APIs (público)")
+		log.Println("   GET  /api/indices               - Índices soportados (público)")
+		log.Println("   GET  /api/excel/full            - Generar reporte completo (54 símbolos) - PÚBLICO")
+		log.Println("   GET  /api/stock/:symbol         - Datos de un símbolo (protegido)")
+		log.Println("   GET  /api/stocks                - Datos de múltiples símbolos (protegido)")
+		log.Println("   GET  /api/weekly                - Datos semanales (protegido)")
+		log.Println("   POST /api/report/send           - Enviar reporte semanal (protegido)")
+		log.Println("   POST /api/excel/send            - Generar y enviar Excel (protegido)")
 
 		// Configurar puerto desde variable de entorno o usar 8080 por defecto
 		port := os.Getenv("PORT")
