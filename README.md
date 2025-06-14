@@ -263,3 +263,5 @@ Este proyecto está bajo la licencia MIT. Ver el archivo `LICENSE` para más det
 - [fmpcloud-go Library](https://github.com/spacecodewor/fmpcloud-go)
 - [EOD Historical Data](https://eodhd.com/)
 - [Polygon.io Documentation](https://polygon.io/docs)
+
+to deploy allways add this env files: flyctl secrets import -a fintrackgoland < fly-secrets-fixed.env

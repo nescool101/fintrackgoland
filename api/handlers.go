@@ -52,9 +52,9 @@ func (h *APIHandler) GetStockData(c *gin.Context) {
 		return
 	}
 
-	// Si no se proporciona fecha, usar la fecha actual
+	// Si no se proporciona fecha, usar la fecha de trading apropiada
 	if dateStr == "" {
-		dateStr = time.Now().Format("2006-01-02")
+		dateStr, _ = h.getTradingDate()
 	}
 
 	// Validar formato de fecha
@@ -114,9 +114,9 @@ func (h *APIHandler) GetMultipleStockData(c *gin.Context) {
 		symbols[i] = strings.TrimSpace(symbol)
 	}
 
-	// Si no se proporciona fecha, usar la fecha actual
+	// Si no se proporciona fecha, usar la fecha de trading apropiada
 	if dateStr == "" {
-		dateStr = time.Now().Format("2006-01-02")
+		dateStr, _ = h.getTradingDate()
 	}
 
 	// Validar formato de fecha
@@ -296,6 +296,53 @@ func (h *APIHandler) isIndex(symbol string) bool {
 	return false
 }
 
+// getTradingDate obtiene la fecha de trading apropiada considerando fines de semana
+func (h *APIHandler) getTradingDate() (string, string) {
+	now := time.Now()
+
+	// Si es sábado (6) o domingo (0), usar el viernes anterior
+	if now.Weekday() == time.Saturday || now.Weekday() == time.Sunday {
+		// Calcular días hasta el viernes anterior
+		daysBack := int(now.Weekday())
+		if now.Weekday() == time.Sunday {
+			daysBack = 2 // Domingo: retroceder 2 días
+		} else {
+			daysBack = 1 // Sábado: retroceder 1 día
+		}
+
+		lastFriday := now.AddDate(0, 0, -daysBack)
+		dateStr := lastFriday.Format("2006-01-02")
+		logic := fmt.Sprintf("weekend-last-friday (%s)", now.Weekday().String())
+
+		log.Printf("📅 Es fin de semana (%s) - Usando último viernes: %s",
+			now.Weekday().String(), dateStr)
+
+		return dateStr, logic
+	}
+
+	// Lógica normal para días de semana
+	if now.Hour() < 15 {
+		// Usar día anterior
+		yesterday := now.AddDate(0, 0, -1)
+		dateStr := yesterday.Format("2006-01-02")
+		logic := "auto-previous-day"
+
+		log.Printf("⏰ Hora actual: %s (antes de 3 PM) - Usando fecha del día anterior: %s",
+			now.Format("15:04:05"), dateStr)
+
+		return dateStr, logic
+	} else {
+		// Usar día actual
+		dateStr := now.Format("2006-01-02")
+		logic := "auto-current-day"
+
+		log.Printf("⏰ Hora actual: %s (después de 3 PM) - Usando fecha actual: %s",
+			now.Format("15:04:05"), dateStr)
+
+		return dateStr, logic
+	}
+}
+
 // getWeekDates genera las fechas de la semana actual
 func getWeekDates() []string {
 	now := time.Now()
@@ -345,9 +392,9 @@ func (h *APIHandler) SendExcelReport(c *gin.Context) {
 		// symbols = service.GetExtendedSymbols()
 	}
 
-	// Determinar fecha
+	// Determinar fecha considerando fines de semana
 	if dateStr == "" {
-		dateStr = time.Now().Format("2006-01-02")
+		dateStr, _ = h.getTradingDate()
 	}
 
 	// Validar formato de fecha
@@ -462,24 +509,12 @@ func (h *APIHandler) SendFullReport(c *gin.Context) {
 		recipientEmail = "nescool101@gmail.com,paulocesarcelis@gmail.com"
 	}
 
-	// Determinar fecha basada en la hora del servidor
+	// Determinar fecha basada en la hora del servidor y día de la semana
+	var dateLogic string
 	if dateStr == "" {
-		now := time.Now()
-
-		// Si es antes de las 3 PM (15:00), usar el día anterior
-		// Si es después de las 3 PM, usar el día actual
-		if now.Hour() < 15 {
-			// Usar día anterior
-			yesterday := now.AddDate(0, 0, -1)
-			dateStr = yesterday.Format("2006-01-02")
-			log.Printf("⏰ Hora actual: %s (antes de 3 PM) - Usando fecha del día anterior: %s",
-				now.Format("15:04:05"), dateStr)
-		} else {
-			// Usar día actual
-			dateStr = now.Format("2006-01-02")
-			log.Printf("⏰ Hora actual: %s (después de 3 PM) - Usando fecha actual: %s",
-				now.Format("15:04:05"), dateStr)
-		}
+		dateStr, dateLogic = h.getTradingDate()
+	} else {
+		dateLogic = "manual"
 	}
 
 	// Validar formato de fecha
@@ -603,15 +638,7 @@ No se pudieron obtener datos de índices. Posibles causas:<br>
 	// Agregar header personalizado con la fecha procesada
 	c.Header("X-Processed-Date", dateStr)
 	c.Header("X-Server-Time", time.Now().Format("2006-01-02 15:04:05"))
-	c.Header("X-Date-Logic", func() string {
-		if c.Query("date") != "" {
-			return "manual"
-		}
-		if time.Now().Hour() < 15 {
-			return "auto-previous-day"
-		}
-		return "auto-current-day"
-	}())
+	c.Header("X-Date-Logic", dateLogic)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message":           "Reporte completo enviado exitosamente",
@@ -625,13 +652,16 @@ No se pudieron obtener datos de índices. Posibles causas:<br>
 		"batches_processed": (len(allSymbols) + batchSize - 1) / batchSize,
 		"data_summary":      allResults,
 		"date_logic": func() string {
-			if c.Query("date") != "" {
+			switch dateLogic {
+			case "manual":
 				return "Fecha especificada manualmente"
-			}
-			if time.Now().Hour() < 15 {
+			case "auto-previous-day":
 				return "Fecha automática: día anterior (antes de 3 PM)"
+			case "auto-current-day":
+				return "Fecha automática: día actual (después de 3 PM)"
+			default:
+				return fmt.Sprintf("Fecha automática: %s", dateLogic)
 			}
-			return "Fecha automática: día actual (después de 3 PM)"
 		}(),
 		"server_time": time.Now().Format("2006-01-02 15:04:05"),
 	})
