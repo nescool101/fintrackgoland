@@ -17,7 +17,7 @@ RUN go mod download
 COPY . .
 
 # Compilar la aplicación
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags="-w -s" -o main .
 
 # Production stage
 FROM alpine:latest
@@ -29,14 +29,17 @@ RUN apk --no-cache add ca-certificates tzdata
 RUN addgroup -g 1001 -S appgroup && \
     adduser -u 1001 -S appuser -G appgroup
 
+# Crear directorio de trabajo para el usuario
+RUN mkdir -p /app && chown appuser:appgroup /app
+
 # Establecer directorio de trabajo
-WORKDIR /root/
+WORKDIR /app
 
 # Copiar el binario desde el stage de build
-COPY --from=builder /app/main .
+COPY --from=builder /app/main ./main
 
-# Cambiar propietario del archivo
-RUN chown appuser:appgroup main
+# Hacer el binario ejecutable y cambiar propietario
+RUN chmod +x ./main && chown appuser:appgroup ./main
 
 # Cambiar a usuario no-root
 USER appuser
