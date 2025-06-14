@@ -93,7 +93,17 @@ func main() {
 		log.Println("   POST /api/excel/send            - Generar y enviar Excel a nescool101@gmail.com")
 		log.Println("   GET  /api/excel/full            - Generar reporte completo (54 símbolos) con procesamiento por lotes")
 
-		if err := router.Run(":8080"); err != nil {
+		// Configurar puerto desde variable de entorno o usar 8080 por defecto
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8080"
+		}
+
+		// Escuchar en todas las interfaces (0.0.0.0) para Fly.io
+		addr := "0.0.0.0:" + port
+		log.Printf("🌐 Servidor escuchando en %s", addr)
+
+		if err := router.Run(addr); err != nil {
 			log.Fatalf("Error iniciando servidor: %v", err)
 		}
 	}()
